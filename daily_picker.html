@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Picker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"  />
+  <style>
+    html { 
+      background: url(https://picsum.photos/id/222/1280/720) no-repeat center center fixed;
+      background-size: cover;
+      height: 100%;
+    }
+    body {
+      font-family: 'Press Start 2P', cursive;
+    }
+    #cards {
+      margin: 0 auto;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-gap: 1rem;
+    }
+    .card {
+      font-size: 12px;
+      color: white;
+      visibility: hidden;
+    }
+    .card-title {
+      margin: 1em;
+    }
+    img {
+      max-width: 100%;
+      margin: auto;
+    }
+    .center {
+      text-align: center;
+    }
+    .mtb-2 {
+      margin-top: 2em;
+      margin-bottom: 2em;
+    }
+    #title {
+      text-align: center;
+      color: white;
+    }
+    #start {
+      color: yellow;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title" class="animate__animated animate__bounce">Daily Scrum Meeting</h1>
+  <h2 id="start">Start!</h2>
+  
+  <div class="mtb-2">
+    <div id="cards"></div>
+  </div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  
+  <script>
+    const animateCSS = (element, animation, infinite = false, prefix = 'animate__') => new Promise((resolve, reject) => {
+      const animationName = `${prefix}${animation}`;
+      const node = document.querySelector(element);
+      node.style.visibility = 'visible';
+      node.classList.add(`${prefix}animated`, animationName);
+      if (infinite) {
+        node.classList.add(`${prefix}infinite`);
+      }
+      function handleAnimationEnd(event) {
+        event.stopPropagation();
+        node.classList.remove(`${prefix}animated`, animationName);
+        resolve('Animation ended');
+      }
+      node.addEventListener('animationend', handleAnimationEnd, {once: true});
+    });
+    const shuffle = function(array) {
+      let currentIndex = array.length,  randomIndex;
+      while (currentIndex != 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+      }
+      return array;
+    };
+    const secondsTimer = (count, token, callback) => new Promise((resolve, reject) => {
+      token.started = true;
+      let counter = count;
+      callback(counter--);
+      const handle = setInterval(() => {
+        callback(counter);
+        if (--counter < 0) {
+        token.started = false;
+        clearInterval(handle);
+        resolve('done');
+        }
+      }, 1000);
+      token.cancel = function() { 
+        token.started = false;
+        clearInterval(handle);        
+        reject("cancelled"); 
+      }
+    });
+  </script>
+  <script>
+  $(function() {
+  
+    let team = [
+      {id: 1, name: "Thomas", img: "https://loremflickr.com/320/240?random=1" },
+      {id: 2, name: "Katrin", img: "https://loremflickr.com/320/240?random=2" },
+      {id: 3, name: "Christian", img: "https://loremflickr.com/320/240?random=3" },
+      {id: 4, name: "Kerstin", img: "https://loremflickr.com/320/240?random=4" },
+      {id: 5, name: "Julia", img: "https://loremflickr.com/320/240?random=5" },
+      {id: 6, name: "Daniel", img: "https://loremflickr.com/320/240?random=6" },
+      {id: 7, name: "Celine", img: "https://loremflickr.com/320/240?random=7" },
+      {id: 8, name: "Luca", img: "https://loremflickr.com/320/240?random=8" },
+      {id: 9, name: "Annabell", img: "https://loremflickr.com/320/240?random=9" }
+    ];
+    
+    shuffle(team).forEach(i => {
+      let elem = $(`<div class="card"><div class="card-title">${i.name}</div><img src="${i.img}" alt="${i.name}"/></div>`)
+      elem.attr('id', `c${i.id}`);
+      elem.appendTo('#cards');
+    });
+    
+    shuffle(team).forEach(i => {
+        let id = i.id;
+      setTimeout(() => animateCSS(`#c${id}`, "swing"), Math.floor(Math.random() * 1000));
+    });
+    
+    setTimeout(() => animateCSS("#start", "tada"), 2000);
+    setTimeout(() => {
+      let user = shuffle(team)[0];
+      let id = `#c${user.id}`;
+      $(id).css('color', 'yellow');
+      animateCSS(id, "heartBeat")
+    }, 2000);
+    
+    var timerToken = {};
+    
+    $('#start').click(function(e) {
+        if (timerToken.started) { 
+        timerToken.cancel(); 
+      }
+      else {
+        secondsTimer(60 * 15, timerToken, (timer) => {
+          minutes = parseInt(timer / 60, 10);
+          seconds = parseInt(timer % 60, 10);
+          minutes = minutes < 10 ? "0" + minutes : minutes;
+          seconds = seconds < 10 ? "0" + seconds : seconds;
+          $('#start').text(minutes + ":" + seconds);
+        })
+        .then(() => $('#start').text("Start!"))
+        .catch(() => $('#start').text("Start!"));
+      }
+    });
+    
+    $('.card').click(function(e) {
+      
+      let targetElement = $(this);
+      let id = targetElement.attr('id');
+      
+      if (targetElement.hasClass('na')) {
+        targetElement.removeClass("na");
+        targetElement.fadeTo("fast", 1);
+        
+      } else {
+        targetElement.addClass("na");
+        animateCSS(`#${id}`, "flip").then((message) => targetElement.fadeTo("fast", 0.3) );
+      }
+    });
+    
+  });  
+  </script>
+</body>
+</html>
