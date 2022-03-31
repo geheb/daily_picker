@@ -3,7 +3,7 @@
 # Daily Picker
 A simple html page to initiate the daily srum meeting.
 
-![Daily Picker Start Screen](readme-images/daily-picker.jpg)
+![Daily Picker Start Screen](readme-images/daily_picker.jpg)
 
 # Features
 
