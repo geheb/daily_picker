@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex" />
-  <meta name="robots" content="nofollow" />
-  <meta name="author" content="geheb">
-  <title>Daily Picker v1.0</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="author" content="gethomast">
+  <meta name="description" content="A simple html page to initiate the daily srum meeting." />
+  <title>Daily Picker v1.1</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"  />
   <style>
@@ -26,7 +26,7 @@
       grid-gap: 1rem;
     }
     .card {
-      font-size: 12px;
+      font-size: 14px;
       color: white;
       visibility: hidden;
     }
@@ -63,6 +63,8 @@
   </div>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" integrity="sha512-+BMamP0e7wn39JGL8nKAZ3yAQT2dL5oaXWr4ZYlTGkKOaoXM/Yj7c4oy50Ngz5yoUutAG17flueD4F6QpTlPng==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="team.js"></script>
   
   <script>
     const animateCSS = (element, animation, infinite = false, prefix = 'animate__') => new Promise((resolve, reject) => {
@@ -83,10 +85,9 @@
     const shuffle = function(array) {
       let currentIndex = array.length,  randomIndex;
       while (currentIndex != 0) {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-      [array[currentIndex], array[randomIndex]] = [
-        array[randomIndex], array[currentIndex]];
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
       }
       return array;
     };
@@ -97,9 +98,9 @@
       const handle = setInterval(() => {
         callback(counter);
         if (--counter < 0) {
-        token.started = false;
-        clearInterval(handle);
-        resolve('done');
+          token.started = false;
+          clearInterval(handle);
+          resolve('done');
         }
       }, 1000);
       token.cancel = function() { 
@@ -108,49 +109,66 @@
         reject("cancelled"); 
       }
     });
+    const createCard = function(team) {
+      const elem = $(`<div class="card"><div class="card-title">${team.name}</div><img src="${team.img}" alt="${team.name}"/></div>`);
+      const id = `card${team.id}`;
+      elem.attr('id', id);
+      elem.appendTo('#cards');
+      return id;
+    };
+    const wait = (delay) => new Promise(resolve => setTimeout(resolve, delay));
+    const waitRandom = () => wait(Math.floor(Math.random() * 1000));
   </script>
   <script>
   $(function() {
-  
-    let team = [
-      {id: 1, name: "Thomas", img: "https://loremflickr.com/320/240?random=1" },
-      {id: 2, name: "Katrin", img: "https://loremflickr.com/320/240?random=2" },
-      {id: 3, name: "Christian", img: "https://loremflickr.com/320/240?random=3" },
-      {id: 4, name: "Kerstin", img: "https://loremflickr.com/320/240?random=4" },
-      {id: 5, name: "Julia", img: "https://loremflickr.com/320/240?random=5" },
-      {id: 6, name: "Daniel", img: "https://loremflickr.com/320/240?random=6" },
-      {id: 7, name: "Celine", img: "https://loremflickr.com/320/240?random=7" },
-      {id: 8, name: "Luca", img: "https://loremflickr.com/320/240?random=8" },
-      {id: 9, name: "Annabell", img: "https://loremflickr.com/320/240?random=9" }
-    ];
-    
-    shuffle(team).forEach(i => {
-      let elem = $(`<div class="card"><div class="card-title">${i.name}</div><img src="${i.img}" alt="${i.name}"/></div>`)
-      elem.attr('id', `c${i.id}`);
-      elem.appendTo('#cards');
+    localforage.config({
+        driver: localforage.LOCALSTORAGE,
+        name: 'Daily-Picker-Storage'
     });
     
-    shuffle(team).forEach(i => {
-        let id = i.id;
-      setTimeout(() => animateCSS(`#c${id}`, "swing"), Math.floor(Math.random() * 1000));
+    // create cards and load settings
+    let promises = [];
+    shuffle(team).forEach(t => {
+      t.elem_id = createCard(t);
+      promises.push(localforage.getItem(t.elem_id + '-available').then(value => t.is_available = value === null || value));
     });
     
-    setTimeout(() => animateCSS("#start", "tada"), 2000);
-    setTimeout(() => {
-      let user = shuffle(team)[0];
-      let id = `#c${user.id}`;
-      $(id).css('color', 'yellow');
-      animateCSS(id, "heartBeat")
-    }, 2000);
+    const highlightMember = function(delay = 0) {
+      const t = shuffle(team).find(t => t.is_available);
+      if (t) {
+        t.is_highlight = true;
+        wait(delay)
+          .then(() => animateCSS('#' + t.elem_id, "heartBeat"))
+          .then(() => $('#' + t.elem_id).css('color', 'yellow'));
+      }
+    };
     
+    Promise.all(promises).then(() => {
+    
+      // update last availability
+      team.forEach(t => $('#' + t.elem_id).css('opacity', t.is_available ? 1.0 : 0.3));
+    
+      // animate members
+      shuffle(team).forEach(t => {
+        waitRandom().then(() => animateCSS('#' + t.elem_id, 'swing'));
+      });
+      
+      // highlight member
+      highlightMember(2000);
+      
+      // ready to start
+      waitRandom().then(() => animateCSS('#start', 'tada'));
+    });
+
     var timerToken = {};
     
     $('#start').click(function(e) {
-        if (timerToken.started) { 
+      
+      if (timerToken.started) { 
         timerToken.cancel(); 
       }
       else {
-        secondsTimer(60 * 15, timerToken, (timer) => {
+        secondsTimer(60 * 15, timerToken, timer => {
           minutes = parseInt(timer / 60, 10);
           seconds = parseInt(timer % 60, 10);
           minutes = minutes < 10 ? "0" + minutes : minutes;
@@ -163,18 +181,29 @@
     });
     
     $('.card').click(function(e) {
+    
+      const elem = $(this);
+      const id = elem.attr('id');
+      const t = team.find(t => t.elem_id == id);
+      t.is_available = !t.is_available;
       
-      let targetElement = $(this);
-      let id = targetElement.attr('id');
-      
-      if (targetElement.hasClass('na')) {
-        targetElement.removeClass("na");
-        targetElement.fadeTo("fast", 1);
-        
+      const key = `${id}-available`;
+      if (t.is_available) {
+        localforage.setItem(key,  1)
+          .then(() => elem.css("opacity", 1));
       } else {
-        targetElement.addClass("na");
-        animateCSS(`#${id}`, "flip").then((message) => targetElement.fadeTo("fast", 0.3) );
+        localforage.setItem(key,  0)
+          .then(() => animateCSS(`#${id}`, "flip"))
+          .then(() => elem.css("opacity", 0.3))
+          .then(() => {
+            if (t.is_highlight) {
+              t.is_highlight = false;
+              elem.css('color', 'white');
+              highlightMember();
+            }
+          });
       }
+ 
     });
     
   });  
