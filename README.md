@@ -9,7 +9,8 @@ A simple html page to initiate the daily srum meeting.
 
 * Randomly arrange the users 
 * Randomly select a team member to start
-* Click on team member to ignore from the daily.
+* Click on team member to ignore from the daily
+* Persist ignored members
 * Click on "Start!" to begin the daily
 
 # Used assets
@@ -18,4 +19,4 @@ A simple html page to initiate the daily srum meeting.
 * background image https://picsum.photo
 
 # How to use?
-Just edit the the html page and update your team members. Feel free to adapt the colors, member images, background images, etc. ;)
+Just edit the team.js file and update your team members. Feel free to adapt the colors, member images, background images, etc. ;)
